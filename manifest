@@ -1,0 +1,79 @@
+#!/nw/dev/usr/bin/perl -w
+
+use strict;
+use Cwd;
+use File::Manifest;
+use Getopt::Std;
+
+sub usage {
+    print 
+'usage: manifest [-c] [<dir>]
+          -c  output to stdout
+
+       manifest (-d|-m|-o) <dir> <newdir>
+          -d  diff report
+          -m  missing report
+          -o  overlap report
+
+       manifest (-?|-h)
+
+  export MANICKSUM=SHA        #preferred checksum algorithm
+';
+    exit;
+}
+
+my $cwd = getcwd;
+my $status=0;
+
+my %opt;
+for (qw(d m o)) { $opt{$_}=0 }
+getopts('?hcdmo', \%opt) or &usage;
+
+&usage if $opt{'?'} || $opt{h};
+my $diff = $opt{d}+$opt{'m'}+$opt{o};
+
+if (!$diff) {
+  my $dir = shift @ARGV || $cwd;
+  &usage if @ARGV;
+  my $m = new File::Manifest($dir);
+  $m->write($opt{c}? (*STDOUT{IO}) : () );
+} else {
+  &usage if $diff != 1 || @ARGV != 2;
+  my ($new,$old);
+
+  my ($a1,$a2) = @ARGV;
+  $old = File::Manifest->load($a1);
+
+  # the MANIFEST is never newer than the real thing
+  if ($a1 eq $a2 and -d $a2 and -f "$a2/MANIFEST") {
+    $new = File::Manifest->new($a2);
+    $new->reread_tree;
+  } else {
+    $new = File::Manifest->load($a2);
+  }
+  
+  my $d = $old->diff($new);
+  
+  if ($opt{d}) {
+      for my $c (qw(+ ! -)) {
+	  for my $f (@{$d->{$c}}) { print "$c $f->{file}\n"; $status=1; }
+      }
+  } elsif ($opt{'m'}) {
+      if (@{$d->{'-'}}) {
+	  print "The following files seem to be missing:\n";
+	  for my $f (@{$d->{'-'}}) { print "- $f->{file}\n"; $status=1; }
+      } else {
+	  print "Looks complete.\n";
+      }
+  } elsif ($opt{o}) {
+      if (@{$d->{'!'}} + @{$d->{'='}} > 0) {
+	  for my $c ('!','=') {
+	      for my $f (@{$d->{$c}}) { print "$c $f->{file}\n"; $status=1; }
+	  }
+      } else {
+	  print "No overlap.\n";
+      }
+  }
+}
+
+exit $status;

@@ -1,0 +1,26 @@
+Manifest
+
+
+A user-friendly version of ExtUtils::Manifest.  In addition to
+creating a file listing, stores checksums for each file.  Three
+reports are built-in to the simple command line interface:
+
+MISSING - Lists files that were in the old manifest but are missing
+          from the new manifest.
+
+DIFF    - Splits output into a listing of files that were add, removed,
+          and modified.  Output is similar to diff in context mode.
+
+OVERLAP - Reports which files are in both trees.
+
+                                 -*-
+
+Get it via http://www.perl.com/CPAN/authors/id/JPRIT/ !
+
+Requires File::Recurse (part of File::Tools module).
+
+                                 -*-
+
+Copyright © 1997-1998 Joshua Nathaniel Pritikin.  All rights reserved.
+This package is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
